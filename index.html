@@ -26,6 +26,9 @@
 			justify-content: center;
 			align-items: center;
 			font-family: Roboto;
+			position: relative;
+			top: 0;
+			left: 0;
 		}
 
 		h1 {
@@ -203,9 +206,72 @@
 		.stats-element:nth-child(7) {
 			font-size: 0.8em;
 		}
+
+		.confirm {
+			width: 40%;
+			height: 16%;
+			background-color: #223;
+			display: grid;
+			border: 2px solid #ff4a00;
+			grid-template-columns: 1fr 1fr;
+			grid-template-rows: 50% 50%;
+			border-radius: 10px;
+			z-index: 999;
+			backdrop-filter: blur(3px);
+			left: 50%;
+			transform: translateX(-50%);
+		}
+
+		/*.confirm-container {
+			width: 100%;
+			height: 100%;
+			align-items: center;
+			justify-content: center;
+			position: absolute;
+			z-index: 999;
+			top: 0;
+			left: 0;
+			border: none;
+			padding: 0;
+		}*/
+
+		.confirm-text {
+			font-family: Roboto;
+			color: #ff4a00;
+			font-weight: 500;
+			font-size: 1.6em;
+		}
+
+		.confirm-item {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.confirm-item:nth-child(1) {
+			grid-column: 1 / 3;
+		}
+
+		.confirm-item > button {
+			border-radius: 100px;
+			background-color: #ff4a00;
+			border: 0;
+			color: #223;
+			width: 80%;
+			height: 50%;
+			cursor: pointer;
+			font-family: Roboto;
+			font-weight: 500;
+			font-size: 1.4em;
+		}
 	</style>
 </head>
 <body>
+	<dialog class="confirm" style="display: none;">
+		<div class="confirm-item"><div class="confirm-text">Are you sure want to continue?</div></div>
+		<div class="confirm-item"><button class="confirm-yes">Yes</button></div>
+		<div class="confirm-item"><button class="confirm-no">No</button></div>
+	</dialog>
 	<h1 class="hello-h1">JAPANESE WRITING QUIZ</h1>
 	<button class="start-button">START</button>
 	<button class="stats-button">STATS</button>
@@ -491,8 +557,8 @@
 		});
 
 		onclick($exit_button, () => {
-			/*if($exit_button.innerText == 'Finish')
-			{*/
+			if($exit_button.innerText == 'Finish')
+			{
 				$main_elements.forEach(element => switchView(element.item, element.type));
 				switchView($game.item, $game.type);
 				clearInterval(interval);
@@ -501,15 +567,12 @@
 				questionsPassed = 0;
 				played = 0;
 				score = 0;
-			//}
-			/*else
+			}
+			else
 			{
-				if(confirm('Are you sure want to exit? Your achievements won\'t be saved.'))
-				{
-					$main_elements.forEach(element => switchView(element.item, element.type));
-					switchView($game.item, $game.type);
-				}
-			}*/
+				confirmMode = 'exitGame';
+				createConfirm('Are you sure want to exit? Your achievements won\'t be saved.')
+			}
 		});
 
 		$answer_buttons.forEach((element, index) => {
@@ -542,28 +605,26 @@
 		{
 			if(dic == 'hiragana')
 			{
-				let correct = $game_dict_hiragana[getRandomInt($game_dict_hiragana.length)];
+				let random = get4UniqueRandom($game_dict_hiragana.length);
+				let correct = $game_dict_hiragana[random[0]];
 				$game.item.childNodes[1].innerText = correct.j;
 				correctAnswer_id = getRandomInt(3);
 				$answer_buttons[correctAnswer_id].innerText = correct.r.toUpperCase();
-				Array.from($answer_buttons).filter((item, index) => index != correctAnswer_id).forEach(item => {
-					$answer_buttons.forEach(elem1 => {
-						if(elem1.innerText != fillButtonWithAnswer(item, $game_dict_hiragana)) fillButtonWithAnswer(item, $game_dict_hiragana);
-					});
+				Array.from($answer_buttons).filter((item, index) => index != correctAnswer_id).forEach((item, index) => {
+					item.innerText = $game_dict_hiragana[random[index + 1]].r.toUpperCase();
 				});
 				dyeButtons('clear');
 				$answer_buttons.forEach(element => element.style.pointerEvents = 'all');
 			}
 			if(dic == 'katakana')
 			{
-				let correct = $game_dict_katakana[getRandomInt($game_dict_katakana.length)];
+				let random = get4UniqueRandom($game_dict_katakana.length);
+				let correct = $game_dict_katakana[random[0]];
 				$game.item.childNodes[1].innerText = correct.j;
 				correctAnswer_id = getRandomInt(3);
 				$answer_buttons[correctAnswer_id].innerText = correct.r.toUpperCase();
-				Array.from($answer_buttons).filter((item, index) => index != correctAnswer_id).forEach(item => {
-					$answer_buttons.forEach(elem1 => {
-						if(elem1.innerText != fillButtonWithAnswer(item, $game_dict_katakana)) fillButtonWithAnswer(item, $game_dict_katakana);
-					});
+				Array.from($answer_buttons).filter((item, index) => index != correctAnswer_id).forEach((item, index) => {
+					item.innerText = $game_dict_katakana[random[index + 1]].r.toUpperCase();
 				});
 				dyeButtons('clear');
 				$answer_buttons.forEach(element => element.style.pointerEvents = 'all');
@@ -640,6 +701,7 @@
 			setStats(currentStats[0], currentStats[1]);
 			score = 0;
 			played = 0;
+			loadStats();
 		}
 
 		function nextTimeOut()
@@ -675,24 +737,13 @@
 		});
 
 		onclick($reset_settings_button, () => {
-			$radio_mode.forEach(item => {
-				item.enabled = false;
-				item.item.classList.remove('radio-enabled');
-			});
-			$radio_mode[0].enable = true;
-			$radio_mode[0].item.classList.add('radio-enabled');
-			$radio_difficulty.forEach(item => {
-				item.enabled = false;
-				item.item.classList.remove('radio-enabled');
-			});
-			$radio_difficulty[0].enable = true;
-			$radio_difficulty[0].item.classList.add('radio-enabled');
-			setOptions('hiragana', 'easy');
+			confirmMode = 'settings';
+			createConfirm('Are you sure want to reset settings?');
 		});
 
 		onclick($reset_progress_button, () => {
-			setStats({hiragana: 0, katakana: 0}, {hiragana: 0, katakana: 0});
-			loadStats();
+			confirmMode = 'progress';
+			createConfirm('Are you sure want to reset progress?');
 		});
 
 		function setOptions(mode, difficulty)
@@ -771,9 +822,84 @@
 			else element.style.display = 'none';
 		}
 
+		function get4UniqueRandom(max)
+		{
+			let random = [0, 0, 0, 0];
+			while(
+					random.filter(element => element == random[0])[1] != undefined ||
+					random.filter(element => element == random[1])[1] != undefined ||
+					random.filter(element => element == random[2])[1] != undefined ||
+					random.filter(element => element == random[3])[1] != undefined
+				)
+			{
+				random.forEach((element, index) => random[index] = getRandomInt(max));
+			}
+			return random;
+		}
+
 		function getRandomInt(max)
 		{
-		  return Math.floor(Math.random() * max);
+		  return Math.round(Math.random() * max);
+		}
+
+		let confirmMode;
+
+		const $confirm = document.querySelector('.confirm');
+		const $confirm_yes_btn = document.querySelector('.confirm-yes');
+		const $confirm_no_btn = document.querySelector('.confirm-no');
+		const $confirm_text = document.querySelector('.confirm-text');
+
+		$confirm_yes_btn.addEventListener('click', () => {
+			$confirm.style.display = 'none';
+			outputConfirm();
+		});
+
+		$confirm_no_btn.addEventListener('click', () => {
+			$confirm.style.display = 'none';
+		});
+
+		function createConfirm(text)
+		{
+			$confirm_text.innerText = text;
+			$confirm.style.display = 'grid';
+		}
+
+		function outputConfirm(answer)
+		{
+			if(confirmMode == 'settings')
+			{
+				$radio_mode.forEach(item => {
+					item.enabled = false;
+					item.item.classList.remove('radio-enabled');
+				});
+				$radio_mode[0].enable = true;
+				$radio_mode[0].item.classList.add('radio-enabled');
+				$radio_difficulty.forEach(item => {
+					item.enabled = false;
+					item.item.classList.remove('radio-enabled');
+				});
+				$radio_difficulty[0].enable = true;
+				$radio_difficulty[0].item.classList.add('radio-enabled');
+				setOptions('hiragana', 'easy');
+			}
+
+			if(confirmMode == 'progress')
+			{
+				setStats({hiragana: 0, katakana: 0}, {hiragana: 0, katakana: 0});
+				loadStats();
+			}
+
+			if(confirmMode == 'exitGame')
+			{
+				$main_elements.forEach(element => switchView(element.item, element.type));
+				switchView($game.item, $game.type);
+				clearInterval(interval);
+				$timer.innerText = '--';
+				time = 0;
+				questionsPassed = 0;
+				played = 0;
+				score = 0;
+			}
 		}
 	</script>
 </body>
